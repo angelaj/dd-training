@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tool.mapper.SysUserMapper">
+  <resultMap id="BaseResultMap" type="com.tool.model.SysUser">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="login_name" jdbcType="VARCHAR" property="loginName" />
+    <result column="user_name" jdbcType="VARCHAR" property="userName" />
+    <result column="password" jdbcType="VARCHAR" property="password" />
+    <result column="description" jdbcType="VARCHAR" property="description" />
+    <result column="state" jdbcType="INTEGER" property="state" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+
+  <resultMap id="SysUserVoMap" type="com.tool.vo.SysUserVo"  extends="BaseResultMap">
+    <collection property="userRoleList" ofType="com.tool.model.SysRole">
+      <id column="id" property="id" jdbcType="BIGINT" />
+      <result column="role_name" property="roleName" jdbcType="VARCHAR" />
+      <result column="role_key" property="roleKey" jdbcType="VARCHAR" />
+      <result column="role_type" property="roleType" jdbcType="INTEGER" />
+      <result column="description" property="description" jdbcType="VARCHAR" />
+      <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+      <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+    </collection>
+  </resultMap>
+
+  <select id="findByLoginName" parameterType="java.lang.String" resultMap="BaseResultMap">
+    select *
+    from sys_user
+    where login_name = #{loginName}
+    LIMIT 1
+  </select>
+
+  <select id="getUserCountByRole" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(DISTINCT u.id)
+    FROM sys_user u
+    LEFT JOIN sys_user_role ur ON u.id = ur.user_id
+    LEFT JOIN sys_role r ON r.id = ur.role_id
+    <where>
+      <include refid="queryConditionForGetUser" />
+    </where>
+  </select>
+
+  <select id="getUserListByRole" parameterType="java.util.Map" resultMap="BaseResultMap">
+    SELECT DISTINCT u.*
+    FROM sys_user u
+    LEFT JOIN sys_user_role ur ON u.id = ur.user_id
+    LEFT JOIN sys_role r ON r.id = ur.role_id
+    <where>
+      <include refid="queryConditionForGetUser" />
+    </where>
+    <choose>
+      <when test="sort !=null and order !=null">
+        ORDER  BY u.${sort} ${order}
+      </when>
+      <otherwise>
+        ORDER  BY u.create_time DESC
+      </otherwise>
+    </choose>
+    <if test="start != null and limit != null">
+      LIMIT #{start}, #{limit}
+    </if>
+  </select>
+
+  <sql id="queryConditionForGetUser">
+    <if test="state != null">
+      AND u.state = #{state}
+    </if>
+    <if test="userId != null">
+      AND u.id = #{userId}
+    </if>
+    <if test="userIdAry != null">
+      AND u.id IN
+      <foreach close=")" collection="userIdAry" index="index" item="userIdItem" open="(" separator=",">
+        #{userIdItem}
+      </foreach>
+    </if>
+    <if test="userName != null">
+      AND u.user_name LIKE concat("%", #{userName}, "%")
+    </if>
+    <if test="roleId != null">
+      AND r.id = #{roleId}
+    </if>
+    <if test="loginName != null">
+      AND u.login_name = #{loginName}
+    </if>
+  </sql>
+
+  <update id="updateUserByMap" parameterType="java.util.Map">
+    update sys_user u
+    <set>
+      <include refid="updateCondition" />
+      u.update_time=now()
+    </set>
+    <where>
+      <include refid="queryConditionForGetUser" />
+    </where>
+  </update>
+
+  <sql id="updateCondition">
+    <if test="toState != null">
+      u.state = #{toState},
+    </if>
+    <if test="toPassword != null">
+      u.password = #{toPassword},
+    </if>
+  </sql>
+
+  <select id="getUserById" parameterType="java.lang.Long" resultMap="SysUserVoMap">
+    SELECT *
+    FROM sys_user
+    WHERE id = #{id}
+  </select>
+
+  <insert id="insertUser" parameterType="com.tool.vo.SysUserVo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Long">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    INSERT INTO sys_user (login_name, user_name, password, description, state, create_time, update_time)
+    values (#{loginName}, #{userName}, #{password}, #{description}, #{state}, now(), now())
+    ON DUPLICATE KEY UPDATE update_time = now()
+  </insert>
+
+  <update id="updateUser" parameterType="com.tool.vo.SysUserVo">
+    UPDATE sys_user
+    SET user_name = #{userName},
+    password = #{password},
+    description = #{description},
+    state = #{state},
+    update_time = now()
+    WHERE id = #{id}
+  </update>
+</mapper>

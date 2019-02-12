@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.tool.mapper.DictionaryMapper" >
+  <resultMap id="BaseResultMap" type="com.tool.model.Dictionary" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="dic_code" property="dicCode" jdbcType="VARCHAR" />
+    <result column="item_name" property="itemName" jdbcType="VARCHAR" />
+    <result column="item_value" property="itemValue" jdbcType="INTEGER" />
+    <result column="item_seq" property="itemSeq" jdbcType="INTEGER" />
+    <result column="item_remark" property="itemRemark" jdbcType="VARCHAR" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+
+  <resultMap id="dicCodeResult" type="java.lang.String" >
+    <result column="dic_code" property="dicCode" jdbcType="VARCHAR" />
+  </resultMap>
+
+  <select id="getDicCodeCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(DISTINCT d.dic_code)
+    FROM dictionary d
+    <where>
+      <include refid="queryCondition" />
+    </where>
+  </select>
+
+  <select id="getDicCodeList" parameterType="java.util.Map" resultMap="dicCodeResult">
+    SELECT DISTINCT d.dic_code
+    FROM dictionary d
+    <where>
+      <include refid="queryCondition" />
+    </where>
+    <choose>
+      <when test="sort !=null and order !=null">
+        ORDER  BY d.${sort} ${order}
+      </when>
+      <otherwise>
+        ORDER  BY d.create_time DESC
+      </otherwise>
+    </choose>
+    <if test="start != null and limit != null">
+      LIMIT #{start}, #{limit}
+    </if>
+  </select>
+
+  <sql id="queryCondition">
+    <if test="dictionaryId != null">
+      AND d.id = #{dictionaryId}
+    </if>
+    <if test="dictionaryIdAry != null">
+      AND d.id IN
+      <foreach close=")" collection="dictionaryIdAry" index="index" item="dictionaryIdItem" open="(" separator=",">
+        #{dictionaryIdItem}
+      </foreach>
+    </if>
+    <if test="itemName != null">
+      AND d.item_name LIKE concat("%", #{itemName}, "%")
+    </if>
+    <if test="dicCode != null">
+      AND d.dic_code = #{dicCode}
+    </if>
+    <if test="itemValue != null">
+      AND d.item_value = #{itemValue}
+    </if>
+    <if test="itemSeq != null">
+      AND d.item_seq = #{itemSeq}
+    </if>
+  </sql>
+
+  <select id="getDictionaryCount" parameterType="java.util.Map" resultType="java.lang.Integer">
+    SELECT COUNT(DISTINCT d.id)
+    FROM dictionary d
+    <where>
+      <include refid="queryCondition" />
+    </where>
+  </select>
+
+  <select id="getDictionaryList" parameterType="java.util.Map" resultMap="BaseResultMap">
+    SELECT DISTINCT d.*
+    FROM dictionary d
+    <where>
+      <include refid="queryCondition" />
+    </where>
+    <choose>
+      <when test="sort !=null and order !=null">
+        ORDER  BY d.${sort} ${order}
+      </when>
+      <otherwise>
+        ORDER  BY d.create_time DESC
+      </otherwise>
+    </choose>
+    <if test="start != null and limit != null">
+      LIMIT #{start}, #{limit}
+    </if>
+  </select>
+
+  <select id="getById" parameterType="java.lang.Long" resultMap="BaseResultMap">
+    SELECT *
+    FROM dictionary
+    WHERE id = #{id}
+  </select>
+
+  <insert id="insertDictionary" parameterType="com.tool.model.Dictionary">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Long">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    INSERT INTO dictionary (dic_code, item_name, item_value, item_seq, item_remark, create_time, update_time)
+    values (#{dicCode}, #{itemName}, #{itemValue}, #{itemSeq}, #{itemRemark}, now(), now())
+    ON DUPLICATE KEY UPDATE update_time = now()
+  </insert>
+
+  <update id="updateDictionary" parameterType="com.tool.model.Dictionary">
+    UPDATE dictionary
+    SET dic_code = #{dicCode},
+    item_name = #{itemName},
+    item_value = #{itemValue},
+    item_seq = #{itemSeq},
+    item_remark = #{itemRemark},
+    update_time = now()
+    WHERE id = #{id}
+  </update>
+
+</mapper>

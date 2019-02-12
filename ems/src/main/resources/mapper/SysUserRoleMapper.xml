@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tool.mapper.SysUserRoleMapper">
+  <resultMap id="BaseResultMap" type="com.tool.model.SysUserRole">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="user_id" jdbcType="BIGINT" property="userId" />
+    <result column="role_id" jdbcType="BIGINT" property="roleId" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+
+  <delete id="deleteUserRoleBatch" parameterType="java.util.Map">
+    DELETE FROM sys_user_role
+    <where>
+      <if test="userId != null">
+        AND user_id = #{userId}
+      </if>
+      <if test="userIdAry != null">
+        AND user_id IN
+        <foreach close=")" collection="userIdAry" index="index" item="userIdItem" open="(" separator=",">
+          #{userIdItem}
+        </foreach>
+      </if>
+      <if test="roleId != null">
+        AND role_id = #{roleId}
+      </if>
+      <if test="roleIdAry != null">
+        AND role_id IN
+        <foreach close=")" collection="roleIdAry" index="index" item="roleIdItem" open="(" separator=",">
+          #{roleIdItem}
+        </foreach>
+      </if>
+    </where>
+  </delete>
+
+  <insert id="addUserRole">
+    INSERT INTO sys_user_role(user_id, role_id,create_time, update_time)
+    VALUES(#{userId}, #{roleId}, now(), now())
+    ON DUPLICATE KEY UPDATE update_time=now()
+  </insert>
+
+</mapper>

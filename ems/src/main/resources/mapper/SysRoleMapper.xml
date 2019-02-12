@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.tool.mapper.SysRoleMapper" >
+  <resultMap id="BaseResultMap" type="com.tool.model.SysRole" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="role_name" property="roleName" jdbcType="VARCHAR" />
+    <result column="role_key" property="roleKey" jdbcType="VARCHAR" />
+    <result column="role_type" property="roleType" jdbcType="INTEGER" />
+    <result column="description" property="description" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+  </resultMap>
+
+  <resultMap id="SysRoleVoMap" type="com.tool.vo.SysRoleVo"  extends="BaseResultMap">
+    <collection property="roleResourceList" ofType="com.tool.model.SysResource">
+      <id column="id" property="id" jdbcType="BIGINT" />
+      <result column="resource_name" property="resourceName" jdbcType="VARCHAR" />
+      <result column="resource_type" property="resourceType" jdbcType="INTEGER" />
+      <result column="resource_code" property="resourceCode" jdbcType="VARCHAR" />
+      <result column="parent_id" property="parentId" jdbcType="BIGINT" />
+      <result column="resource_url" property="resourceUrl" jdbcType="VARCHAR" />
+      <result column="level" property="level" jdbcType="INTEGER" />
+      <result column="seq" property="seq" jdbcType="INTEGER" />
+      <result column="icon" property="icon" jdbcType="VARCHAR" />
+      <result column="description" property="description" jdbcType="VARCHAR" />
+      <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+      <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+    </collection>
+  </resultMap>
+
+  <select id="getRoleCountByUser" resultType="java.lang.Integer" parameterType="java.util.Map" >
+    SELECT COUNT(DISTINCT ro.id)
+    FROM sys_role ro
+    LEFT JOIN sys_user_role ur ON ro.id = ur.role_id
+    LEFT JOIN sys_user u ON u.id = ur.user_id
+    <where>
+      <include refid="queryConditionForGetRole"></include>
+    </where>
+  </select>
+
+  <select id="getRoleListByUser" resultMap="BaseResultMap" parameterType="java.util.Map" >
+    SELECT DISTINCT ro.*
+    FROM sys_role ro
+    LEFT JOIN sys_user_role ur ON ro.id = ur.role_id
+    LEFT JOIN sys_user u ON u.id = ur.user_id
+    <where>
+      <include refid="queryConditionForGetRole"></include>
+    </where>
+    <choose>
+      <when test="sort !=null and order !=null">
+        ORDER  BY ro.${sort} ${order}
+      </when>
+      <otherwise>
+        ORDER  BY ro.create_time DESC
+      </otherwise>
+    </choose>
+    <if test="start != null and limit != null" >
+      LIMIT #{start}, #{limit}
+    </if>
+  </select>
+
+  <sql id="queryConditionForGetRole">
+    <if test="userId != null">
+      AND u.id = #{userId}
+    </if>
+    <if test="roleId != null">
+      AND ro.id = #{roleId}
+    </if>
+    <if test="roleType != null">
+      AND ro.role_type = #{roleType}
+    </if>
+    <if test="roleIdAry != null">
+      AND ro.id IN
+      <foreach collection="roleIdAry" separator="," open="("  close=")" item="roleIdItem" index="index">
+        #{roleIdItem}
+      </foreach>
+    </if>
+    <if test="roleName != null">
+      AND ro.role_name LIKE concat("%", #{roleName}, "%")
+    </if>
+  </sql>
+
+  <select id="getRoleCount" resultType="java.lang.Integer" parameterType="java.util.Map" >
+    select count(DISTINCT ro.id)
+    from sys_role ro
+    <where>
+      <include refid="queryConditionForGetRole"></include>
+    </where>
+  </select>
+
+  <select id="getRoleList" resultMap="BaseResultMap" parameterType="java.util.Map" >
+    select DISTINCT ro.*
+    from sys_role ro
+    <where>
+      <include refid="queryConditionForGetRole"></include>
+    </where>
+    <choose>
+      <when test="sort !=null and order !=null">
+        ORDER  BY ro.${sort} ${order}
+      </when>
+      <otherwise>
+        ORDER  BY ro.create_time DESC
+      </otherwise>
+    </choose>
+    <if test="start != null and limit != null" >
+      LIMIT #{start}, #{limit}
+    </if>
+  </select>
+
+  <select id="getRoleById" parameterType="java.lang.Long" resultMap="SysRoleVoMap">
+    select *
+    from sys_role
+    where id = #{id}
+  </select>
+
+  <insert id="insertRole" parameterType="com.tool.vo.SysRoleVo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Long">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into sys_role (role_name, role_key, role_type, description, create_time, update_time)
+    values (#{roleName}, #{roleKey}, #{roleType}, #{description}, now(), now())
+    ON DUPLICATE KEY UPDATE update_time = now()
+  </insert>
+
+  <update id="updateRole" parameterType="com.tool.vo.SysRoleVo">
+    update sys_role
+    <set>
+      <if test="roleName != null">`role_name` = #{roleName}, </if>
+      <if test="roleKey != null">`role_key` = #{roleKey}, </if>
+      <if test="description != null">`description` = #{description}, </if>
+      <if test="roleType != null">`role_type` = #{roleType}, </if>
+      update_time = now()
+    </set>
+    where id = #{id}
+  </update>
+</mapper>
